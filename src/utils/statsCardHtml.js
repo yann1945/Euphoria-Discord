@@ -1,8 +1,6 @@
-const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
-const { pathToFileURL } = require("url");
 
 const HTML_PATH = path.join(__dirname, "..", "..", "stats-card.html");
 const CARD_SELECTOR = "#card";
@@ -10,6 +8,14 @@ const PORT = 9877;
 
 let browser = null;
 let server = null;
+let puppeteer = null;
+
+async function getPuppeteer() {
+  if (!puppeteer) {
+    puppeteer = await import("puppeteer");
+  }
+  return puppeteer.default || puppeteer;
+}
 
 function startLocalServer() {
   return new Promise((resolve, reject) => {
@@ -36,7 +42,8 @@ function startLocalServer() {
 async function getBrowser() {
   if (!browser) {
     server = await startLocalServer();
-    browser = await puppeteer.launch({
+    const puppeteerModule = await getPuppeteer();
+    browser = await puppeteerModule.launch({
       headless: "new",
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-web-security"]
     });

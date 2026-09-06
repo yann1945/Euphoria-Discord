@@ -1,4 +1,3 @@
-const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
@@ -9,6 +8,14 @@ const PORT = 9878;
 
 let browser = null;
 let server = null;
+let puppeteer = null;
+
+async function getPuppeteer() {
+  if (!puppeteer) {
+    puppeteer = await import("puppeteer");
+  }
+  return puppeteer.default || puppeteer;
+}
 
 function startLocalServer() {
   return new Promise((resolve, reject) => {
@@ -35,7 +42,8 @@ function startLocalServer() {
 async function getBrowser() {
   if (!browser) {
     server = await startLocalServer();
-    browser = await puppeteer.launch({
+    const puppeteerModule = await getPuppeteer();
+    browser = await puppeteerModule.launch({
       headless: "new",
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-web-security"]
     });
