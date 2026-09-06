@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Euphoria - Level Notification Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Poppins:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:24px;
+    min-height:100vh;
+    background:#0e0512;
+    font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
+    padding:24px;
+  }
+
+  /* ---------- CARD (this part gets exported) ---------- */
+  .card {
+    position:relative;
+    width:260px;
+    height:100px;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 85% 15%, rgba(190,120,255,0.35), transparent 55%),
+      radial-gradient(circle at 10% 90%, rgba(120,60,200,0.35), transparent 60%),
+      linear-gradient(135deg, #1a0a2b 0%, #2c0f45 45%, #170a29 100%);
+    border:1px solid rgba(196,140,255,0.35);
+    box-shadow: 0 0 18px rgba(150,80,230,0.45), inset 0 0 20px rgba(80,20,120,0.4);
+    display:flex;
+    align-items:center;
+    padding:0 12px;
+    gap:10px;
+  }
+
+  .card::before {
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image:
+      radial-gradient(1px 1px at 20px 15px, #fff, transparent),
+      radial-gradient(1px 1px at 60px 70px, #fff, transparent),
+      radial-gradient(1px 1px at 120px 20px, #fff, transparent),
+      radial-gradient(1px 1px at 160px 60px, #fff, transparent),
+      radial-gradient(1px 1px at 210px 30px, #fff, transparent),
+      radial-gradient(1px 1px at 240px 75px, #fff, transparent),
+      radial-gradient(1px 1px at 95px 85px, #fff, transparent);
+    opacity:0.5;
+    pointer-events:none;
+  }
+
+  .avatar-wrap {
+    position:relative;
+    width:60px;
+    height:60px;
+    flex-shrink:0;
+    border-radius:50%;
+    padding:3px;
+    background: conic-gradient(from 180deg, #d6a8ff, #8b3ff0, #c084fc, #d6a8ff);
+    box-shadow: 0 0 10px rgba(190,120,255,0.8);
+    z-index:1;
+  }
+
+  .avatar-wrap img {
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    object-fit:cover;
+    border:2px solid #1a0a2b;
+    display:block;
+  }
+
+  .rank-badge {
+    position:absolute;
+    bottom:-4px;
+    right:-4px;
+    background:linear-gradient(135deg,#a855f7,#6d28d9);
+    color:#fff;
+    font-family:'Orbitron', sans-serif;
+    font-size:9px;
+    font-weight:700;
+    padding:2px 5px;
+    border-radius:8px;
+    border:1.5px solid #1a0a2b;
+    box-shadow:0 0 6px rgba(168,85,247,0.9);
+  }
+
+  .info {
+    position:relative;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    min-width:0;
+  }
+
+  .rankup-line {
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+  }
+
+  .rankup-label {
+    font-family:'Orbitron', sans-serif;
+    color:#e9d5ff;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:0.5px;
+    text-shadow:0 0 8px rgba(216,160,255,0.9);
+  }
+
+  .rank-value {
+    font-family:'Orbitron', sans-serif;
+    color:#fff;
+    font-size:13px;
+    font-weight:700;
+    background:linear-gradient(90deg,#f0d9ff,#c084fc);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+
+  .username {
+    font-family:'Poppins', sans-serif;
+    color:#c9a8ec;
+    font-size:9px;
+    font-weight:600;
+    opacity:0.85;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:150px;
+  }
+
+  .desc {
+    font-family:'Poppins', sans-serif;
+    color:#d8c3ef;
+    font-size:8px;
+    line-height:1.35;
+    font-weight:400;
+    font-style:italic;
+    opacity:0.9;
+    display:-webkit-box;
+    -webkit-line-clamp:3;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+
+  /* ---------- CONTROL PANEL ---------- */
+  .panel {
+    width:260px;
+    background:#170a24;
+    border:1px solid rgba(196,140,255,0.25);
+    border-radius:12px;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .field label {
+    display:block;
+    color:#c9a8ec;
+    font-size:11px;
+    font-weight:600;
+    margin-bottom:4px;
+  }
+
+  .field input[type="text"],
+  .field input[type="number"] {
+    width:100%;
+    background:#0e0512;
+    border:1px solid rgba(196,140,255,0.35);
+    border-radius:8px;
+    padding:7px 9px;
+    color:#f0e6ff;
+    font-family:'Poppins', sans-serif;
+    font-size:12px;
+    outline:none;
+  }
+
+  .field input[type="file"] {
+    width:100%;
+    color:#c9a8ec;
+    font-size:11px;
+  }
+
+  .field input:focus {
+    border-color:#c084fc;
+  }
+
+  .download-btn {
+    width:100%;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:linear-gradient(135deg,#a855f7,#6d28d9);
+    color:#fff;
+    font-family:'Orbitron', sans-serif;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    cursor:pointer;
+    box-shadow:0 0 12px rgba(168,85,247,0.6);
+    transition:transform .1s;
+  }
+
+  .download-btn:hover { transform:translateY(-1px); }
+  .download-btn:active { transform:translateY(0); }
+</style>
+</head>
+<body>
+
+  <div class="card" id="card">
+    <div class="avatar-wrap">
+      <img id="avatarImg" src="https://i.pravatar.cc/150?img=12" alt="avatar">
+      <div class="rank-badge" id="rankBadge">24</div>
+    </div>
+
+    <div class="info">
+      <div class="rankup-line">
+        <span class="rankup-label">NAIK RANK</span>
+        <span class="rank-value" id="rankValue">Lv. 24</span>
+      </div>
+      <span class="username" id="usernameText">Nightlisten#0421</span>
+      <p class="desc" id="descText">Auranya makin kuat! Terus muter lagu, kumpulin vibes positif, dan nikmati tiap detik perjalanan musikmu bareng Euphoria sampai pagi menjelang.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="field">
+      <label for="nameInput">Nama User</label>
+      <input type="text" id="nameInput" placeholder="Nightlisten#0421" value="Nightlisten#0421">
+    </div>
+
+    <div class="field">
+      <label for="levelInput">Level</label>
+      <input type="number" id="levelInput" placeholder="24" value="24" min="1">
+    </div>
+
+    <div class="field">
+      <label for="avatarInput">Avatar</label>
+      <input type="file" id="avatarInput" accept="image/*">
+    </div>
+
+    <button class="download-btn" id="downloadBtn">DOWNLOAD PNG</button>
+  </div>
+
+<script>
+  const nameInput = document.getElementById('nameInput');
+  const levelInput = document.getElementById('levelInput');
+  const avatarInput = document.getElementById('avatarInput');
+  const avatarImg = document.getElementById('avatarImg');
+  const usernameText = document.getElementById('usernameText');
+  const rankValue = document.getElementById('rankValue');
+  const rankBadge = document.getElementById('rankBadge');
+  const card = document.getElementById('card');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  avatarInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { avatarImg.src = ev.target.result; };
+    reader.readAsDataURL(file);
+  });
+
+  const descriptions = [
+    "Congrats {user}! You just leveled up to Level {level}. Keep the beats rolling!",
+    "Level Up! {user} reached Level {level}. The dance floor is officially yours!",
+    "Turn up the volume! {user} just hit Level {level}!",
+    "{user} upgraded to Level {level}. You're the master of the queue now!",
+    "Sound check complete. {user} is now Level {level}!",
+    "{user} bumped up to Level {level}. Pure musical power!",
+    "Level {level} unlocked! {user} is dropping straight fire in the chat.",
+    "{user} reached Level {level}! Time to play your headliner set.",
+    "Listen up! {user} just advanced to Level {level}!",
+    "Base boosted! {user} is now sitting at Level {level}.",
+    "Level {level} achieved! Keep feeding us those good vibes, {user}.",
+    "From listener to rockstar: {user} just hit Level {level}!",
+    "{user} hit Level {level}! Keep the melody going, legend.",
+    "Queue the applause! {user} just reached Level {level}!",
+    "{user} leveled up to Level {level}. That's music to our ears!",
+    "Mic check 1-2! {user} has successfully reached Level {level}!",
+    "{user} is now Level {level}. Hit play on the celebration tracks!",
+    "Level Up! {user} made it to Level {level} with style.",
+    "{user} hit Level {level}! Your music taste is paying off!",
+    "Hype moment! {user} just leveled up to Level {level}!",
+    "Level Up! {user} reached Level {level}. Keep grinding those tracks!",
+    "New achievement unlocked for {user}: Level {level} Listener!",
+    "{user} leveled up to Level {level}! You're unstoppable.",
+    "Rank up! {user} is now Level {level}.",
+    "XP maxed out! {user} reached Level {level}!",
+    "Level {level} acquired! {user} is taking over the leaderboard.",
+    "{user} just hit Level {level}! Absolute legend status.",
+    "Congratulations {user}! Level {level} looks great on you.",
+    "Level Up! {user} gained enough XP to hit Level {level}!",
+    "{user} evolved to Level {level}! Keep listening!",
+    "Level Up! {user} ➔ Level {level}!",
+    "Boom! {user} reached Level {level}!",
+    "Level {level} unlocked for {user}!",
+    "GG! {user} is now Level {level}!",
+    "{user} just hit Level {level}. Respect!",
+    "Level {level} achieved by {user}!",
+    "{user} ➔ Level {level}. Keep bumping!",
+    "Next level reached! Congrats {user} (Level {level}).",
+    "Level {level} for {user}! Onward!",
+    "{user} leveled up! Now Level {level}.",
+    "Hold the phone! {user} just reached Level {level}!",
+    "Somebody stop {user}! They just hit Level {level}!",
+    "Vibe check passed! {user} reached Level {level}!",
+    "{user} is on a roll! Level {level} reached!",
+    "Give it up for {user}! Now sitting high at Level {level}!",
+    "Party time! {user} made it to Level {level}!",
+    "{user} is making history at Level {level}!",
+    "Another milestone hit! {user} is now Level {level}.",
+    "Break out the confetti! {user} reached Level {level}!",
+    "Top tier vibes! {user} just leveled up to Level {level}!"
+  ];
+
+  function updateDescription() {
+    const user = nameInput.value || 'Nightlisten#0421';
+    const lvl = levelInput.value || '24';
+    const template = descriptions[Math.floor(Math.random() * descriptions.length)];
+    const text = template.replace(/{user}/g, user).replace(/{level}/g, lvl);
+    document.getElementById('descText').textContent = text;
+  }
+
+  nameInput.addEventListener('input', updateDescription);
+  levelInput.addEventListener('input', updateDescription);
+  updateDescription();
+
+  downloadBtn.addEventListener('click', async () => {
+    downloadBtn.textContent = 'MEMPROSES...';
+
+    // simpan style asli, lalu buang sudut lengkung supaya hasil download full persegi
+    const originalRadius = card.style.borderRadius;
+    const originalShadow = card.style.boxShadow;
+    card.style.borderRadius = '0px';
+    card.style.boxShadow = 'none';
+
+    try {
+      const canvas = await html2canvas(card, {
+        backgroundColor: null,
+        scale: 3,
+        useCORS: true
+      });
+
+      const link = document.createElement('a');
+      const safeName = (nameInput.value || 'level-up').replace(/[^a-z0-9_-]/gi, '_');
+      link.download = `${safeName}-lv${levelInput.value || '24'}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      alert('Gagal membuat gambar. Jika pakai avatar dari URL luar, pastikan sumbernya mendukung CORS.');
+      console.error(err);
+    } finally {
+      card.style.borderRadius = originalRadius;
+      card.style.boxShadow = originalShadow;
+      downloadBtn.textContent = 'DOWNLOAD PNG';
+    }
+  });
+</script>
+
+</body>
+</html>

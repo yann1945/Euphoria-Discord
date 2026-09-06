@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Profile Card Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --bg-0:#160a2e;
+    --panel-fill:rgba(24,12,46,.42);
+    --panel-border:rgba(255,255,255,.08);
+    --purple-bright:#8b3ef0;
+    --purple-mid:#6a2fc0;
+    --rank-dim:#2c1a52;
+    --ink:#f3ecff;
+    --ink-dim:#b8a8d9;
+    font-family:'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:#0d0620;
+    color:var(--ink);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:26px;
+    padding:32px 16px 64px;
+  }
+  h1{font-size:20px;margin:0;font-weight:600;font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif;}
+  .subtitle{color:var(--ink-dim);font-size:13px;margin-top:-14px;text-align:center;max-width:520px;}
+
+  /* ---------- toolbar ---------- */
+  .toolbar{
+    width:100%;max-width:1040px;
+    background:#170b30;
+    border:1px solid rgba(139,62,240,.28);
+    border-radius:16px;
+    padding:20px 24px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:16px;
+  }
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim);}
+  .field input[type="text"], .field input[type="file"]{
+    background:var(--bg-0);
+    border:1px solid rgba(139,62,240,.35);
+    color:var(--ink);
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:13px;
+    outline:none;
+  }
+  .field input:focus{border-color:var(--purple-bright);}
+  .group-title{
+    grid-column:1/-1;font-size:12px;color:#c9a8f2;letter-spacing:.08em;text-transform:uppercase;
+    margin-top:6px;border-top:1px solid rgba(139,62,240,.22);padding-top:12px;
+  }
+  .group-title:first-child{border-top:none;margin-top:0;padding-top:0;}
+  .actions{grid-column:1/-1;display:flex;align-items:center;gap:14px;margin-top:4px;}
+  button{
+    background:linear-gradient(135deg,var(--purple-bright),#5a1fae);
+    color:#fff;border:none;padding:11px 20px;border-radius:10px;
+    font-size:13px;font-weight:600;cursor:pointer;
+    box-shadow:0 6px 18px rgba(139,62,240,.35);
+  }
+  button:disabled{opacity:.55;cursor:progress;}
+  #status{font-size:12px;color:var(--ink-dim);}
+
+  /* ---------- card stage ---------- */
+  .stage{padding:30px;background:#0a0518;border-radius:22px;}
+  .card{
+    position:relative;
+    width:940px;max-width:88vw;
+    height:560px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    background:
+      radial-gradient(ellipse 90% 55% at 30% 100%, #9a3ee0 0%, rgba(154,62,224,0) 62%),
+      radial-gradient(ellipse 70% 45% at 65% 100%, #7b2fe0 0%, rgba(123,47,224,0) 58%),
+      linear-gradient(180deg, #0a0518 0%, #150a33 40%, #2a1156 72%, #5321a0 100%);
+    box-shadow:0 30px 60px rgba(0,0,0,.6);
+    border:1px solid rgba(139,62,240,.28);
+    padding:24px 30px 16px;
+  }
+
+  .bg-clouds{
+    position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 260px 180px at 15% 30%, rgba(255,255,255,.05), transparent 70%),
+      radial-gradient(ellipse 320px 200px at 75% 15%, rgba(255,255,255,.045), transparent 70%),
+      radial-gradient(ellipse 300px 220px at 50% 55%, rgba(190,120,255,.06), transparent 70%);
+  }
+  .bg-stars{position:absolute;inset:0;pointer-events:none;}
+
+  .header{
+    position:relative;z-index:3;
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:16px;
+  }
+  .header-left{display:flex;align-items:center;gap:18px;}
+  .avatar-ring{
+    width:104px;height:104px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:conic-gradient(from 0deg, #8b3ef0, #c9a8f2, #5a1fae, #b18af0, #8b3ef0);
+    border:1px solid rgba(139,62,240,.28);
+    padding:4px;
+  }
+  .avatar{
+    width:100%;height:100%;border-radius:50%;
+    background:linear-gradient(150deg,#2c1a52,#0a0518);
+    overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;}
+  .avatar span{font-size:34px;font-weight:700;color:#fff;font-family:Georgia,serif;}
+
+  .id-block{display:flex;flex-direction:column;gap:7px;}
+  .username{font-size:28px;font-weight:700;color:#fff;font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif;}
+  .stats-list{display:flex;flex-direction:column;gap:3px;}
+  .stat-line{
+    font-size:13.5px;font-weight:600;color:var(--ink-dim);
+  }
+  .stat-line span{color:#fff;font-weight:700;}
+  .social-icon{
+    width:18px;height:18px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .social-icon svg{width:14px;height:14px;fill:#e9dcff;}
+
+  .content-grid{position:relative;z-index:3;display:grid;grid-template-columns:1.15fr 1fr;grid-template-rows:1fr;gap:14px;flex:1;min-height:0;}
+  .col-right{display:flex;flex-direction:column;gap:10px;min-height:0;}
+  .panel{
+    background:var(--panel-fill);
+    border:1px solid var(--panel-border);
+    border-radius:14px;
+    padding:18px 20px 16px;
+    display:flex;flex-direction:column;
+    min-height:0;
+    flex:1;
+  }
+  .panel h3{margin:0 0 10px;flex:0 0 auto;font-size:13px;letter-spacing:.08em;color:var(--ink);font-weight:700;font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif;}
+  .rank-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;justify-content:space-between;gap:10px;flex:1;min-height:0;}
+  .rank-list li{display:flex;align-items:center;gap:12px;}
+  #tracksList{gap:14px;}
+  .rank{
+    flex:0 0 auto;width:27px;height:27px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;color:#fff;
+    background:var(--rank-dim);
+  }
+  .rank-list li:first-child .rank{background:var(--purple-bright);}
+  .row-text{font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row-text b{color:#fff;font-weight:700;}
+  .row-text span.dot{color:var(--ink-dim);}
+  .row-text span.name{color:var(--ink-dim);}
+
+  .track-thumb{
+    flex:0 0 auto;
+    width:88px;height:88px;
+    border-radius:12px;
+    overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
+  }
+  .track-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .track-thumb svg{width:34px;height:34px;fill:rgba(255,255,255,.9);}
+  .track-text{display:flex;flex-direction:column;gap:5px;min-width:0;}
+  .track-text .t-name{
+    font-size:18px;font-weight:700;color:#fff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif;
+  }
+  .track-text .t-dur{font-size:14px;color:var(--ink-dim);}
+
+  /* ---------- top-right level bar ---------- */
+  .header-right{display:flex;align-items:center;}
+  .level-mini{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  .level-mini-top{font-size:13px;color:var(--ink-dim);font-weight:600;}
+  .level-mini-top b{color:#fff;font-weight:800;}
+  .level-mini-track{width:140px;height:9px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;}
+  .level-mini-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--purple-bright),#c9a8f2);}
+  .level-mini-xp{font-size:11px;color:var(--ink-dim);}
+
+  /* ---------- footer ---------- */
+  .footer{
+    position:relative;z-index:3;
+    margin-top:auto;
+    padding-top:10px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .footer-left{
+    font-size:11px;
+    font-weight:400;
+    letter-spacing:.03em;
+    color:var(--ink-dim);
+    background:none;
+    border:none;
+    padding:0;
+  }
+  .footer-right{display:flex;gap:10px;}
+</style>
+</head>
+<body>
+
+<h1>Music Profile Card Generator</h1>
+<p class="subtitle">Isi data & unggah foto profilmu, kartu akan ter-update otomatis. Klik "Unduh sebagai JPEG" untuk mengekspor kartu.</p>
+
+<div class="toolbar">
+  <div class="group-title">Profil</div>
+  <div class="field"><label>Username</label><input type="text" id="in-username" value="ynntzy"></div>
+  <div class="field"><label>Foto profil</label><input type="file" id="avatarUpload" accept="image/*"></div>
+  <div class="field"><label>Jumlah lagu disukai</label><input type="text" id="in-likes" value="128"></div>
+  <div class="field"><label>Jumlah playlist</label><input type="text" id="in-playlists" value="14"></div>
+  <div class="field"><label>Total stream</label><input type="text" id="in-streams" value="1,204"></div>
+
+  <div class="group-title">Level</div>
+  <div class="field"><label>Level</label><input type="text" id="in-level" value="24"></div>
+  <div class="field"><label>Info XP</label><input type="text" id="in-levelxp" value="1,204 / 2,000 XP"></div>
+  <div class="field"><label>Progress (0-100)</label><input type="text" id="in-levelpct" value="60"></div>
+
+  <div class="group-title">Top Servers</div>
+  <div class="field"><label>Durasi 1</label><input type="text" id="s1d" value="1w 5d"></div>
+  <div class="field"><label>Nama server 1</label><input type="text" id="s1n" value="Roblox Universe .😀😀 #2..."></div>
+  <div class="field"><label>Durasi 2</label><input type="text" id="s2d" value="5d 13h"></div>
+  <div class="field"><label>Nama server 2</label><input type="text" id="s2n" value="a.e.c.l.o.d"></div>
+  <div class="field"><label>Durasi 3</label><input type="text" id="s3d" value="2d 16h"></div>
+  <div class="field"><label>Nama server 3</label><input type="text" id="s3n" value="Santuy Network #Reb..."></div>
+
+  <div class="group-title">Top Friends</div>
+  <div class="field"><label>Durasi 1</label><input type="text" id="f1d" value="2w 7h"></div>
+  <div class="field"><label>Username 1</label><input type="text" id="f1n" value="havincihuy"></div>
+  <div class="field"><label>Durasi 2</label><input type="text" id="f2d" value="1w 4d"></div>
+  <div class="field"><label>Username 2</label><input type="text" id="f2n" value="yumiawww"></div>
+  <div class="field"><label>Durasi 3</label><input type="text" id="f3d" value="1w 4d"></div>
+  <div class="field"><label>Username 3</label><input type="text" id="f3n" value="parrotze"></div>
+
+  <div class="group-title">Top Tracks</div>
+  <div class="field"><label>Cover lagu 1</label><input type="file" id="t1img" accept="image/*"></div>
+  <div class="field"><label>Durasi 1</label><input type="text" id="t1d" value="12h 14m"></div>
+  <div class="field"><label>Judul lagu 1</label><input type="text" id="t1n" value="Blank Space"></div>
+  <div class="field"><label>Cover lagu 2</label><input type="file" id="t2img" accept="image/*"></div>
+  <div class="field"><label>Durasi 2</label><input type="text" id="t2d" value="11h 27m"></div>
+  <div class="field"><label>Judul lagu 2</label><input type="text" id="t2n" value="Jatuh Suka"></div>
+  <div class="field"><label>Cover lagu 3</label><input type="file" id="t3img" accept="image/*"></div>
+  <div class="field"><label>Durasi 3</label><input type="text" id="t3d" value="6h 9m"></div>
+  <div class="field"><label>Judul lagu 3</label><input type="text" id="t3n" value="Базовый минимум"></div>
+
+  <div class="actions">
+    <button id="downloadBtn">Unduh sebagai JPEG</button>
+    <span id="status"></span>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="card" id="card">
+
+    <div class="bg-clouds"></div>
+    <canvas class="bg-stars" id="starCanvas"></canvas>
+
+    <div class="header">
+      <div class="header-left">
+        <div class="avatar-ring"><div class="avatar" id="avatarBox"><span id="avatarInitial">Y</span></div></div>
+        <div class="id-block">
+          <div class="username" id="usernameOut">ynntzy</div>
+          <div class="stats-list">
+            <div class="stat-line">Like Songs: <span id="likesOut">128</span></div>
+            <div class="stat-line">Playlist: <span id="playlistsOut">14</span></div>
+            <div class="stat-line">Total Stream: <span id="streamsOut">1,204</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="level-mini">
+          <div class="level-mini-top">Level <b id="levelOut">24</b></div>
+          <div class="level-mini-track"><div class="level-mini-fill" id="levelBarFill" style="width:60%"></div></div>
+          <div class="level-mini-xp" id="levelXpOut">1,204 / 2,000 XP</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="panel">
+        <h3>TOP TRACKS</h3>
+        <ul class="rank-list" id="tracksList"></ul>
+      </div>
+      <div class="col-right">
+        <div class="panel">
+          <h3>TOP FRIENDS</h3>
+          <ul class="rank-list" id="friendsList"></ul>
+        </div>
+        <div class="panel">
+          <h3>TOP SERVERS</h3>
+          <ul class="rank-list" id="serversList"></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="footer-left">EUPHORIA MUSIC WRAPPED</span>
+      <div class="footer-right">
+        <div class="social-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.5 14.4c-.2.3-.5.4-.8.2-2.2-1.3-5-1.6-8.2-.9-.3.1-.6-.1-.7-.4-.1-.3.1-.6.4-.7 3.5-.8 6.6-.5 9 1 .3.1.4.5.3.8zm1.2-2.7c-.2.3-.6.5-.9.3-2.5-1.5-6.3-2-9.3-1.1-.4.1-.7-.1-.9-.4-.1-.4.1-.7.4-.9 3.4-1 7.6-.5 10.5 1.2.3.2.5.6.2.9zm.1-2.8c-3-1.8-8-2-10.9-1.1-.4.1-.9-.1-1-.5-.1-.4.1-.9.5-1 3.3-1 8.9-.8 12.4 1.2.4.2.5.8.3 1.1-.2.4-.7.5-1.1.3z"/></svg></div>
+        <div class="social-icon"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="3" height="8"/><rect x="10.5" y="5" width="3" height="13"/><rect x="17" y="13" width="3" height="5"/></svg></div>
+        <div class="social-icon"><svg viewBox="0 0 24 24"><circle cx="6.3" cy="18" r="2.3"/><circle cx="16.3" cy="16" r="2.3"/><rect x="8.3" y="5" width="1.6" height="13.2"/><rect x="18.3" y="3" width="1.6" height="13.2"/><path d="M8.3 5 L18.3 3 L18.3 6.2 L8.3 8.2 Z"/></svg></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function val(id){ return document.getElementById(id).value.trim() || '\u2014'; }
+function clampPct(v){
+  const n = parseFloat(v);
+  if(isNaN(n)) return 0;
+  return Math.max(0, Math.min(100, n));
+}
+
+const NOTE_ICON = '<svg viewBox="0 0 24 24"><path d="M9 17V4.5l10-2v11.4M9 17a3 3 0 11-3-3 3 3 0 013 3zm10-3a3 3 0 11-3-3 3 3 0 013 3z"/></svg>';
+const trackImages = [null, null, null];
+const TRACK_HUES = [280, 200, 330];
+
+function buildList(el, items){
+  el.innerHTML = items.map((it,i)=>`
+    <li>
+      <span class="rank">${i+1}</span>
+      <div class="row-text"><b>${it.d}</b><span class="dot"> \u00b7 </span><span class="name">${it.n}</span></div>
+    </li>`).join('');
+}
+
+function buildTrackList(el, items){
+  el.innerHTML = items.map((it,i)=>{
+    const img = trackImages[i];
+    const c1 = `hsl(${TRACK_HUES[i]} 60% 42%)`;
+    const c2 = `hsl(${(TRACK_HUES[i]+40)%360} 55% 26%)`;
+    const thumbInner = img
+      ? `<img src="${img}" alt="${it.n}">`
+      : NOTE_ICON;
+    const thumbStyle = img ? '' : `style="background:linear-gradient(150deg, ${c1}, ${c2})"`;
+    return `
+    <li>
+      <span class="rank">${i+1}</span>
+      <div class="track-thumb" ${thumbStyle}>${thumbInner}</div>
+      <div class="track-text">
+        <div class="t-name">${it.n}</div>
+        <div class="t-dur">${it.d}</div>
+      </div>
+    </li>`;
+  }).join('');
+}
+
+function render(){
+  const username = val('in-username');
+  document.getElementById('usernameOut').textContent = username;
+  if(!document.getElementById('avatarBox').querySelector('img')){
+    document.getElementById('avatarInitial').textContent = username.charAt(0).toUpperCase() || '?';
+  }
+  document.getElementById('likesOut').textContent = val('in-likes');
+  document.getElementById('playlistsOut').textContent = val('in-playlists');
+  document.getElementById('streamsOut').textContent = val('in-streams');
+
+  document.getElementById('levelOut').textContent = val('in-level');
+  document.getElementById('levelXpOut').textContent = val('in-levelxp');
+  document.getElementById('levelBarFill').style.width = clampPct(document.getElementById('in-levelpct').value) + '%';
+
+  buildList(document.getElementById('serversList'), [
+    {d:val('s1d'), n:val('s1n')},
+    {d:val('s2d'), n:val('s2n')},
+    {d:val('s3d'), n:val('s3n')},
+  ]);
+  buildList(document.getElementById('friendsList'), [
+    {d:val('f1d'), n:val('f1n')},
+    {d:val('f2d'), n:val('f2n')},
+    {d:val('f3d'), n:val('f3n')},
+  ]);
+  buildTrackList(document.getElementById('tracksList'), [
+    {d:val('t1d'), n:val('t1n')},
+    {d:val('t2d'), n:val('t2n')},
+    {d:val('t3d'), n:val('t3n')},
+  ]);
+}
+
+document.querySelectorAll('.toolbar input[type="text"]').forEach(i=>i.addEventListener('input', render));
+
+document.getElementById('avatarUpload').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    const box = document.getElementById('avatarBox');
+    box.innerHTML = `<img src="${ev.target.result}" alt="avatar">`;
+  };
+  reader.readAsDataURL(file);
+});
+
+['t1img','t2img','t3img'].forEach((id, idx)=>{
+  document.getElementById(id).addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      trackImages[idx] = ev.target.result;
+      render();
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+render();
+
+// ---------- animated starfield + aurora + comet (nebula background) ----------
+const cardEl = document.getElementById('card');
+const starCanvas = document.getElementById('starCanvas');
+const starCtx = starCanvas.getContext('2d');
+const PERIOD = 1800; // ms — one full loop, matches the exported GIF duration
+
+function resizeStarCanvas(){
+  starCanvas.width = cardEl.offsetWidth;
+  starCanvas.height = cardEl.offsetHeight;
+}
+resizeStarCanvas();
+window.addEventListener('resize', resizeStarCanvas);
+
+const STAR_COUNT = 170;
+const stars = Array.from({length: STAR_COUNT}, () => ({
+  x: Math.random(),
+  y: Math.random(),
+  r: Math.random() * 1.5 + 0.4,
+  phase: Math.random() * Math.PI * 2,
+  speed: 0.6 + Math.random() * 1.8,
+  warm: Math.random() < 0.12
+}));
+
+function drawStars(t){
+  for (const s of stars) {
+    const twinkle = 0.25 + 0.75 * Math.abs(Math.sin(t * 0.0012 * s.speed + s.phase));
+    starCtx.beginPath();
+    starCtx.fillStyle = s.warm
+      ? `rgba(255,224,178,${twinkle.toFixed(2)})`
+      : `rgba(255,255,255,${twinkle.toFixed(2)})`;
+    starCtx.arc(s.x * starCanvas.width, s.y * starCanvas.height, s.r, 0, Math.PI * 2);
+    starCtx.fill();
+  }
+}
+
+function drawComet(t){
+  const w = starCanvas.width, h = starCanvas.height;
+  const progress = (t % PERIOD) / PERIOD;
+  const sx = -0.08, sy = -0.08, ex = 1.08, ey = 1.08; // one direction, edge to edge diagonally
+  starCtx.save();
+  starCtx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 16; i++) {
+    const p = progress - i * 0.01;
+    if (p < 0) continue;
+    const px = (sx + (ex - sx) * p) * w;
+    const py = (sy + (ey - sy) * p) * h;
+    const alpha = (1 - i / 16) * 0.55;
+    const r = Math.max(0.4, 3.2 - i * 0.19);
+    starCtx.beginPath();
+    starCtx.fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
+    starCtx.arc(px, py, r, 0, Math.PI * 2);
+    starCtx.fill();
+  }
+  const hx = (sx + (ex - sx) * progress) * w;
+  const hy = (sy + (ey - sy) * progress) * h;
+  const glow = starCtx.createRadialGradient(hx, hy, 0, hx, hy, 12);
+  glow.addColorStop(0, 'rgba(255,255,255,0.95)');
+  glow.addColorStop(0.4, 'rgba(200,220,255,0.5)');
+  glow.addColorStop(1, 'rgba(200,220,255,0)');
+  starCtx.beginPath();
+  starCtx.fillStyle = glow;
+  starCtx.arc(hx, hy, 12, 0, Math.PI * 2);
+  starCtx.fill();
+  starCtx.restore();
+}
+
+function drawScene(t){
+  starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  drawStars(t);
+  drawComet(t);
+}
+
+function starLoop(t){
+  drawScene(t);
+  starRafId = requestAnimationFrame(starLoop);
+}
+let starRafId = requestAnimationFrame(starLoop);
+
+// ---------- JPEG export ----------
+const downloadBtn = document.getElementById('downloadBtn');
+const statusEl = document.getElementById('status');
+const CARD_W = 940;
+const CARD_H = 560;
+
+function fitToExportSize(srcCanvas){
+  const out = document.createElement('canvas');
+  out.width = CARD_W;
+  out.height = CARD_H;
+  const ctx = out.getContext('2d');
+
+  // base fill, then draw straight 1:1 -- no corner rounding, no crop/scale
+  ctx.fillStyle = '#0a0518';
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+  ctx.drawImage(srcCanvas, 0, 0, CARD_W, CARD_H);
+
+  return out;
+}
+
+downloadBtn.addEventListener('click', async () => {
+  downloadBtn.disabled = true;
+  statusEl.textContent = 'Mempersiapkan export JPEG...';
+
+  // freeze the background on a clean frame (stars only, no comet) so the
+  // export never catches the comet mid-flight overlapping the content
+  cancelAnimationFrame(starRafId);
+  starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  drawStars(performance.now());
+
+  try {
+    const rawCanvas = await html2canvas(cardEl, { backgroundColor: '#0a0518', scale: 1 });
+    const exportCanvas = fitToExportSize(rawCanvas);
+    const blob = await new Promise((resolve) => exportCanvas.toBlob(resolve, 'image/jpeg', 0.92));
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${document.getElementById('in-username').value.trim() || 'profile'}-music-card.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    statusEl.textContent = 'Selesai! JPEG 940×560 berhasil diunduh.';
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = 'Gagal membuat JPEG: ' + err.message;
+  } finally {
+    downloadBtn.disabled = false;
+    starRafId = requestAnimationFrame(starLoop); // resume the live preview animation
+  }
+});
+</script>
+</body>
+</html>

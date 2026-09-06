@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bot Status Card Generator — Constellation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --bg-0:#160a2e;
+    --panel-fill:rgba(24,12,46,.4);
+    --panel-border:rgba(255,255,255,.08);
+    --purple-bright:#8b3ef0;
+    --purple-mid:#6a2fc0;
+    --ink:#f3ecff;
+    --ink-dim:#b8a8d9;
+    --c-system:#a78bfa;
+    --c-gateway:#9061f2;
+    --c-playing:#b18af0;
+    --c-server:#b18af0;
+    font-family:'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:#0d0620;
+    color:var(--ink);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:26px;
+    padding:32px 16px 64px;
+  }
+  h1{font-size:20px;margin:0;font-weight:600;font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif;}
+  .subtitle{color:var(--ink-dim);font-size:13px;margin-top:-14px;text-align:center;max-width:520px;}
+
+  /* ---------- toolbar ---------- */
+  .toolbar{
+    width:100%;max-width:1040px;
+    background:#170b30;
+    border:1px solid rgba(139,62,240,.28);
+    border-radius:16px;
+    padding:20px 24px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:16px;
+  }
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim);}
+  .field input[type="text"], .field input[type="file"]{
+    background:var(--bg-0);
+    border:1px solid rgba(139,62,240,.35);
+    color:var(--ink);
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:13px;
+    outline:none;
+  }
+  .field input:focus{border-color:var(--purple-bright);}
+  .group-title{
+    grid-column:1/-1;font-size:12px;color:#c9a8f2;letter-spacing:.08em;text-transform:uppercase;
+    margin-top:6px;border-top:1px solid rgba(139,62,240,.22);padding-top:12px;
+  }
+  .group-title:first-child{border-top:none;margin-top:0;padding-top:0;}
+  .actions{grid-column:1/-1;display:flex;align-items:center;gap:14px;margin-top:4px;}
+  button{
+    background:linear-gradient(135deg,var(--purple-bright),#5a1fae);
+    color:#fff;border:none;padding:11px 20px;border-radius:10px;
+    font-size:13px;font-weight:600;cursor:pointer;
+    box-shadow:0 6px 18px rgba(139,62,240,.35);
+  }
+  button:disabled{opacity:.55;cursor:progress;}
+  #status{font-size:12px;color:var(--ink-dim);}
+
+  /* ---------- card stage ---------- */
+  .stage{padding:30px;background:#0a0518;border-radius:22px;}
+  .card{
+    position:relative;
+    width:940px;
+    height:560px;
+    overflow:hidden;
+    display:flex;
+    background:
+      radial-gradient(ellipse 70% 55% at 50% 0%, #8b3ef0 0%, rgba(139,62,240,0) 62%),
+      radial-gradient(ellipse 70% 55% at 50% 100%, #8b3ef0 0%, rgba(139,62,240,0) 62%),
+      linear-gradient(180deg, #0e0a24 0%, #150c2a 42%, #1c0f3a 70%, #2a1156 100%);
+    box-shadow:0 30px 60px rgba(0,0,0,.6);
+  }
+
+  .bg-clouds{
+    position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 260px 180px at 85% 20%, rgba(255,255,255,.05), transparent 70%),
+      radial-gradient(ellipse 300px 220px at 20% 90%, rgba(190,120,255,.06), transparent 70%);
+  }
+  .bg-stars{position:absolute;inset:0;pointer-events:none;}
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    position:relative;z-index:3;
+    width:288px;flex:0 0 auto;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:16px;
+    padding:32px 20px;
+    border-right:1px solid rgba(255,255,255,.08);
+  }
+  .avatar-ring{
+    width:132px;height:132px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:conic-gradient(from 0deg, var(--purple-bright), #c9a8f2, #5a1fae, var(--c-playing), var(--purple-bright));
+    padding:4px;
+  }
+  .avatar{
+    width:100%;height:100%;border-radius:50%;
+    background:linear-gradient(150deg,#2c1a52,#0a0518);
+    overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;}
+  .avatar span{font-size:42px;font-weight:700;color:#fff;font-family:Georgia,serif;}
+
+  .botname{font-size:24px;font-weight:700;color:#fff;font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif;text-align:center;}
+  .status-pill{
+    display:flex;align-items:center;gap:7px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.14);
+    padding:6px 14px;border-radius:999px;
+    font-size:12px;font-weight:600;color:var(--ink-dim);
+  }
+  .status-pill .led{width:7px;height:7px;border-radius:50%;background:#b18af0;animation:pulse 2.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+  .sidebar-meta{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:6px;}
+  .meta-line{font-size:12.5px;color:var(--ink-dim);}
+  .meta-line b{color:#fff;}
+
+  /* ---------- colored stat boxes ---------- */
+  .timeline{
+    position:relative;z-index:3;
+    flex:1;
+    padding:26px 26px 26px 22px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .row{
+    position:relative;
+    flex:1;
+    display:flex;flex-direction:column;justify-content:center;gap:10px;
+    padding:16px 22px;
+    border-radius:14px;
+    border:1px solid transparent;
+  }
+  .row-top{display:flex;align-items:center;gap:14px;}
+  .row-system{background:rgba(167,139,250,.14);border-color:var(--panel-border);}
+  .row-gateway{background:rgba(144,97,242,.14);border-color:var(--panel-border);}
+  .row-playing{background:rgba(139,62,240,.14);border-color:var(--panel-border);}
+  .row-server{background:rgba(139,62,240,.14);border-color:var(--panel-border);}
+
+  .node{
+    flex:0 0 auto;
+    width:13px;height:13px;border-radius:50%;
+    box-shadow:0 0 0 4px rgba(255,255,255,.06);
+  }
+  .row-system .node{background:var(--c-system);}
+  .row-gateway .node{background:var(--c-gateway);}
+  .row-playing .node{background:var(--c-playing);}
+  .row-server .node{background:var(--c-server);}
+
+  .row-label{
+    flex:0 0 108px;
+    font-size:13px;font-weight:700;color:#fff;
+    font-family:'Space Grotesk','Plus Jakarta Sans',sans-serif;
+  }
+  .row-stats{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;font-size:13.5px;color:var(--ink-dim);}
+  .row-stats b{color:#fff;font-weight:700;}
+  .row-stats .sep{color:rgba(255,255,255,.3);}
+
+  .row-playing .row-stats{align-items:center;gap:10px;flex:1;min-width:0;}
+
+  .spark{width:100%;height:42px;flex:0 0 auto;}
+  .spark svg{width:100%;height:100%;overflow:visible;}
+  .spark path.line{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .spark path.fill{stroke:none;opacity:.16;}
+  .spark circle{r:2.6;}
+  .row-system .spark path.line, .row-system .spark circle{stroke:var(--c-system);fill:var(--c-system);}
+  .row-system .spark path.fill{fill:var(--c-system);}
+  .row-gateway .spark path.line, .row-gateway .spark circle{stroke:var(--c-gateway);fill:var(--c-gateway);}
+  .row-gateway .spark path.fill{fill:var(--c-gateway);}
+  .row-playing .spark path.line, .row-playing .spark circle{stroke:var(--c-playing);fill:var(--c-playing);}
+  .row-playing .spark path.fill{fill:var(--c-playing);}
+  .row-server .spark path.line, .row-server .spark circle{stroke:var(--c-server);fill:var(--c-server);}
+  .row-server .spark path.fill{fill:var(--c-server);}
+
+  .card.export-freeze .status-pill .led{animation-play-state:paused;}
+</style>
+</head>
+<body>
+
+<h1>Bot Status Card Generator</h1>
+<p class="subtitle">Isi data bot & unggah avatar, kartu akan ter-update otomatis. Klik "Unduh sebagai JPEG" untuk mengekspor kartu berukuran 940×560px.</p>
+
+<div class="toolbar">
+  <div class="group-title">Identity</div>
+  <div class="field"><label>Bot name</label><input type="text" id="in-botname" value="Aegis"></div>
+  <div class="field"><label>Avatar</label><input type="file" id="avatarUpload" accept="image/*"></div>
+  <div class="field"><label>Status</label><input type="text" id="in-status" value="Online"></div>
+  <div class="field"><label>Uptime</label><input type="text" id="in-uptime" value="14d 06h"></div>
+  <div class="field"><label>Owner</label><input type="text" id="in-owner" value="fatih3g"></div>
+
+  <div class="group-title">System</div>
+  <div class="field"><label>CPU</label><input type="text" id="in-cpu" value="12%"></div>
+  <div class="field"><label>RAM</label><input type="text" id="in-ram" value="340MB / 512MB"></div>
+  <div class="field"><label>Node</label><input type="text" id="in-node" value="v20.11.1"></div>
+
+  <div class="group-title">Gateway</div>
+  <div class="field"><label>Ping</label><input type="text" id="in-ping" value="48ms"></div>
+  <div class="field"><label>Shard</label><input type="text" id="in-shard" value="0 / 4"></div>
+  <div class="field"><label>WS status</label><input type="text" id="in-ws" value="READY"></div>
+
+  <div class="group-title">Playing</div>
+  <div class="field"><label>Running song</label><input type="text" id="in-song" value="Blinding Lights"></div>
+  <div class="field"><label>Queue song</label><input type="text" id="in-queue" value="Levitating"></div>
+
+  <div class="group-title">Server</div>
+  <div class="field"><label>Servers</label><input type="text" id="in-servers" value="1,204"></div>
+  <div class="field"><label>Users</label><input type="text" id="in-users" value="84,530"></div>
+  <div class="field"><label>Channels</label><input type="text" id="in-channels" value="3,912"></div>
+
+  <div class="actions">
+    <button id="downloadBtn">Unduh sebagai JPEG</button>
+    <span id="status"></span>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="card" id="card">
+
+    <div class="bg-clouds"></div>
+    <canvas class="bg-stars" id="starCanvas"></canvas>
+
+    <div class="sidebar">
+      <div class="avatar-ring"><div class="avatar" id="avatarBox"><span id="avatarInitial">A</span></div></div>
+      <div class="botname" id="botnameOut">Aegis</div>
+      <div class="status-pill"><span class="led"></span><span id="statusOut">Online</span></div>
+      <div class="sidebar-meta">
+        <div class="meta-line">uptime <b id="uptimeOut">14d 06h</b></div>
+        <div class="meta-line">owner <b id="ownerOut">fatih3g</b></div>
+      </div>
+    </div>
+
+    <div class="timeline">
+      <div class="row row-system">
+        <div class="row-top">
+          <span class="node"></span>
+          <span class="row-label">System</span>
+          <div class="row-stats">
+            <b id="cpuOut">12%</b> cpu <span class="sep">·</span>
+            <b id="ramOut">340MB / 512MB</b> ram <span class="sep">·</span>
+            <b id="nodeOut">v20.11.1</b> node
+          </div>
+        </div>
+        <div class="spark">
+          <svg viewBox="0 0 100 34" preserveAspectRatio="none">
+            <path class="fill" d="M0,26 L14,22 L28,24 L42,14 L56,17 L70,9 L84,12 L100,4 L100,34 L0,34 Z"/>
+            <path class="line" d="M0,26 L14,22 L28,24 L42,14 L56,17 L70,9 L84,12 L100,4"/>
+            <circle cx="100" cy="4"/>
+          </svg>
+        </div>
+      </div>
+      <div class="row row-gateway">
+        <div class="row-top">
+          <span class="node"></span>
+          <span class="row-label">Gateway</span>
+          <div class="row-stats">
+            <b id="pingOut">48ms</b> ping <span class="sep">·</span>
+            <b id="shardOut">0 / 4</b> shard <span class="sep">·</span>
+            <b id="wsOut">READY</b>
+          </div>
+        </div>
+        <div class="spark">
+          <svg viewBox="0 0 100 34" preserveAspectRatio="none">
+            <path class="fill" d="M0,10 L14,16 L28,12 L42,20 L56,15 L70,22 L84,18 L100,24 L100,34 L0,34 Z"/>
+            <path class="line" d="M0,10 L14,16 L28,12 L42,20 L56,15 L70,22 L84,18 L100,24"/>
+            <circle cx="100" cy="24"/>
+          </svg>
+        </div>
+      </div>
+      <div class="row row-playing">
+        <div class="row-top">
+          <span class="node"></span>
+          <span class="row-label">Playing</span>
+          <div class="row-stats">
+            <b id="songOut">Blinding Lights</b> running <span class="sep">·</span>
+            <b id="queueOut">Levitating</b> queue
+          </div>
+        </div>
+        <div class="spark">
+          <svg viewBox="0 0 100 34" preserveAspectRatio="none">
+            <path class="fill" d="M0,20 L14,12 L28,18 L42,8 L56,16 L70,6 L84,14 L100,5 L100,34 L0,34 Z"/>
+            <path class="line" d="M0,20 L14,12 L28,18 L42,8 L56,16 L70,6 L84,14 L100,5"/>
+            <circle cx="100" cy="5"/>
+          </svg>
+        </div>
+      </div>
+      <div class="row row-server">
+        <div class="row-top">
+          <span class="node"></span>
+          <span class="row-label">Server</span>
+          <div class="row-stats">
+            <b id="serversOut">1,204</b> servers <span class="sep">·</span>
+            <b id="usersOut">84,530</b> users <span class="sep">·</span>
+            <b id="channelsOut">3,912</b> channels
+          </div>
+        </div>
+        <div class="spark">
+          <svg viewBox="0 0 100 34" preserveAspectRatio="none">
+            <path class="fill" d="M0,28 L14,24 L28,25 L42,18 L56,20 L70,11 L84,13 L100,7 L100,34 L0,34 Z"/>
+            <path class="line" d="M0,28 L14,24 L28,25 L42,18 L56,20 L70,11 L84,13 L100,7"/>
+            <circle cx="100" cy="7"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function val(id){ return document.getElementById(id).value.trim() || '\u2014'; }
+
+function render(){
+  const botname = val('in-botname');
+  document.getElementById('botnameOut').textContent = botname;
+  document.getElementById('statusOut').textContent = val('in-status');
+  document.getElementById('uptimeOut').textContent = val('in-uptime');
+  document.getElementById('ownerOut').textContent = val('in-owner');
+
+  if(!document.getElementById('avatarBox').querySelector('img')){
+    document.getElementById('avatarInitial').textContent = botname.charAt(0).toUpperCase() || '?';
+  }
+
+  document.getElementById('cpuOut').textContent = val('in-cpu');
+  document.getElementById('ramOut').textContent = val('in-ram');
+  document.getElementById('nodeOut').textContent = val('in-node');
+
+  document.getElementById('pingOut').textContent = val('in-ping');
+  document.getElementById('shardOut').textContent = val('in-shard');
+  document.getElementById('wsOut').textContent = val('in-ws');
+
+  document.getElementById('songOut').textContent = val('in-song');
+  document.getElementById('queueOut').textContent = val('in-queue');
+
+  document.getElementById('serversOut').textContent = val('in-servers');
+  document.getElementById('usersOut').textContent = val('in-users');
+  document.getElementById('channelsOut').textContent = val('in-channels');
+}
+
+document.querySelectorAll('.toolbar input[type="text"]').forEach(i=>i.addEventListener('input', render));
+
+document.getElementById('avatarUpload').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    const box = document.getElementById('avatarBox');
+    box.innerHTML = `<img src="${ev.target.result}" alt="avatar">`;
+  };
+  reader.readAsDataURL(file);
+});
+
+render();
+
+// ---------- animated starfield + comet ----------
+const cardEl = document.getElementById('card');
+const starCanvas = document.getElementById('starCanvas');
+const starCtx = starCanvas.getContext('2d');
+const PERIOD = 1800;
+
+function resizeStarCanvas(){
+  starCanvas.width = cardEl.offsetWidth;
+  starCanvas.height = cardEl.offsetHeight;
+}
+resizeStarCanvas();
+window.addEventListener('resize', resizeStarCanvas);
+
+const STAR_COUNT = 170;
+const stars = Array.from({length: STAR_COUNT}, () => ({
+  x: Math.random(),
+  y: Math.random(),
+  r: Math.random() * 1.5 + 0.4,
+  phase: Math.random() * Math.PI * 2,
+  speed: 0.6 + Math.random() * 1.8,
+  warm: Math.random() < 0.12
+}));
+
+function drawStars(t){
+  for (const s of stars) {
+    const twinkle = 0.25 + 0.75 * Math.abs(Math.sin(t * 0.0012 * s.speed + s.phase));
+    starCtx.beginPath();
+    starCtx.fillStyle = s.warm
+      ? `rgba(255,224,178,${twinkle.toFixed(2)})`
+      : `rgba(255,255,255,${twinkle.toFixed(2)})`;
+    starCtx.arc(s.x * starCanvas.width, s.y * starCanvas.height, s.r, 0, Math.PI * 2);
+    starCtx.fill();
+  }
+}
+
+function drawComet(t){
+  const w = starCanvas.width, h = starCanvas.height;
+  const progress = (t % PERIOD) / PERIOD;
+  const sx = -0.08, sy = -0.08, ex = 1.08, ey = 1.08;
+  starCtx.save();
+  starCtx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 16; i++) {
+    const p = progress - i * 0.01;
+    if (p < 0) continue;
+    const px = (sx + (ex - sx) * p) * w;
+    const py = (sy + (ey - sy) * p) * h;
+    const alpha = (1 - i / 16) * 0.55;
+    const r = Math.max(0.4, 3.2 - i * 0.19);
+    starCtx.beginPath();
+    starCtx.fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
+    starCtx.arc(px, py, r, 0, Math.PI * 2);
+    starCtx.fill();
+  }
+  const hx = (sx + (ex - sx) * progress) * w;
+  const hy = (sy + (ey - sy) * progress) * h;
+  const glow = starCtx.createRadialGradient(hx, hy, 0, hx, hy, 12);
+  glow.addColorStop(0, 'rgba(255,255,255,0.95)');
+  glow.addColorStop(0.4, 'rgba(200,220,255,0.5)');
+  glow.addColorStop(1, 'rgba(200,220,255,0)');
+  starCtx.beginPath();
+  starCtx.fillStyle = glow;
+  starCtx.arc(hx, hy, 12, 0, Math.PI * 2);
+  starCtx.fill();
+  starCtx.restore();
+}
+
+function drawScene(t){
+  starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  drawStars(t);
+  drawComet(t);
+}
+
+function starLoop(t){
+  drawScene(t);
+  starRafId = requestAnimationFrame(starLoop);
+}
+let starRafId = requestAnimationFrame(starLoop);
+
+// ---------- JPEG export ----------
+const downloadBtn = document.getElementById('downloadBtn');
+const statusEl = document.getElementById('status');
+const CARD_W = 940;
+const CARD_H = 560;
+
+function fitToExportSize(srcCanvas){
+  const out = document.createElement('canvas');
+  out.width = CARD_W;
+  out.height = CARD_H;
+  const ctx = out.getContext('2d');
+  ctx.fillStyle = '#0a0518';
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+  ctx.drawImage(srcCanvas, 0, 0, CARD_W, CARD_H);
+  return out;
+}
+
+downloadBtn.addEventListener('click', async () => {
+  downloadBtn.disabled = true;
+  statusEl.textContent = 'Mempersiapkan export JPEG...';
+  cardEl.classList.add('export-freeze');
+
+  cancelAnimationFrame(starRafId);
+  starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  drawStars(performance.now());
+
+  try {
+    const rawCanvas = await html2canvas(cardEl, { backgroundColor: '#0a0518', scale: 1 });
+    const exportCanvas = fitToExportSize(rawCanvas);
+    const blob = await new Promise((resolve) => exportCanvas.toBlob(resolve, 'image/jpeg', 0.92));
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${document.getElementById('in-botname').value.trim() || 'bot'}-status-card.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    statusEl.textContent = 'Selesai! JPEG 940×560 berhasil diunduh.';
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = 'Gagal membuat JPEG: ' + err.message;
+  } finally {
+    downloadBtn.disabled = false;
+    cardEl.classList.remove('export-freeze');
+    starRafId = requestAnimationFrame(starLoop);
+  }
+});
+</script>
+</body>
+</html>

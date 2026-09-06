@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Euphoria Studio</title>
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+<style>
+@font-face{font-family:DrukWide;src:url("./fonts/DrukWideBold.ttf") format("truetype");font-weight:900;font-display:block}
+@font-face{font-family:SecularOne;src:url("./fonts/SecularOne-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:Stilu;src:url("./fonts/stilu.regular.otf") format("opentype");font-weight:400;font-display:block}
+:root{--accent:#b873ff;--bg:#08060f;--panel:#111020;--line:rgba(255,255,255,.08)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Arial,sans-serif;color:#fff}
+body{background:radial-gradient(circle at 60% 35%,#20103d 0,#0a0712 45%,#05040a 100%);padding:20px}
+.app{max-width:1500px;margin:auto;display:grid;grid-template-columns:305px minmax(0,1fr);gap:14px}
+.panel,.preview,.export{border:1px solid var(--line);background:rgba(12,10,23,.88);box-shadow:0 20px 70px #0008;backdrop-filter:blur(18px)}
+.panel{border-radius:12px;padding:16px;grid-row:1/3}
+.brand{display:flex;align-items:center;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.brand-icon{width:35px;height:35px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#d58cff,#6735ff);box-shadow:0 0 25px #9a55ff55}
+.brand h1{font-size:17px;margin:0;font-weight:800}.brand h1 span{color:#a66aff}.sub{font-size:11px;color:#aaa3b5;margin:5px 0 18px}
+.section{margin:14px 0}.label{display:block;color:#aaa2b5;font-size:9px;font-weight:700;letter-spacing:.12em;margin-bottom:7px}
+input,textarea{width:100%;border:1px solid #ffffff0d;background:#171527;color:#eee;border-radius:8px;padding:10px;font:12px Arial;outline:0}
+textarea{min-height:62px;resize:vertical}input:focus,textarea:focus{border-color:#a66aff66}
+input[type=color]{height:37px;padding:3px;cursor:pointer}
+button{width:100%;border:0;border-radius:8px;padding:11px;margin-top:8px;color:#fff;font-size:11px;font-weight:800;cursor:pointer;transition:.18s}
+button:hover{transform:translateY(-1px);filter:brightness(1.08)}button:disabled{opacity:.55;cursor:wait}
+.primary{background:linear-gradient(100deg,#7437ff,#b04dff);box-shadow:0 10px 25px #803eff33}.secondary{background:#171527;border:1px solid var(--line)}
+.preview{border-radius:12px;padding:18px;min-width:0}.preview-head{display:flex;justify-content:space-between;align-items:center;color:#aaa3b5;font:12px monospace;padding:2px 4px 16px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.canvas-wrap{width:100%;display:flex;justify-content:center;align-items:center;background:radial-gradient(circle,#17102a,#080711 70%);padding:18px;border-radius:8px;overflow:hidden}
+canvas{display:block;width:min(930px,100%);height:auto;aspect-ratio:930/280;border-radius:3px;box-shadow:0 25px 70px #000b}
+.export{border-radius:12px;padding:15px;display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:center}.export-title{font:12px monospace;color:#bbb3c7;margin-bottom:8px}.bar{height:6px;background:#ffffff0c;border-radius:10px;overflow:hidden}.bar i{display:block;width:0;height:100%;background:linear-gradient(90deg,#7134ff,#cf70ff);transition:width .1s}.status{border-left:1px solid var(--line);padding-left:20px;color:#aaa3b5;font-size:11px}.status strong{display:block;color:#eee;font-size:12px;margin-bottom:4px}.dot{display:inline-block;width:9px;height:9px;background:#32d583;border-radius:50%;box-shadow:0 0 14px #32d583;margin-right:7px}
+.small-note{font-size:9px;color:#777080;line-height:1.5;margin-top:10px}
+@media(max-width:950px){body{padding:10px}.app{grid-template-columns:1fr}.panel{grid-row:auto}.export{grid-template-columns:1fr}.status{border-left:0;border-top:1px solid var(--line);padding:12px 0 0}.canvas-wrap{padding:6px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="panel">
+  <div class="brand"><div class="brand-icon">✦</div><h1>EUPHORIA <span>STUDIO</span></h1></div>
+  <div class="sub">Create your animated Discord banner</div>
+
+  <div class="section"><label class="label">BACKGROUND IMAGE</label><input id="bg" type="file" accept="image/png,image/jpeg,image/webp"></div>
+  <div class="section"><label class="label">PROFILE IMAGE</label><input id="avatar" type="file" accept="image/png,image/jpeg,image/webp"></div>
+
+  <div class="section"><label class="label">SMALL TITLE · SECULAR ONE</label><input id="small" value="MUSIC BOT"></div>
+  <div class="section"><label class="label">MAIN TITLE · DRUK WIDE</label><input id="title" value="EUPHORIA"></div>
+  <div class="section"><label class="label">DESCRIPTION · STILU</label><textarea id="desc">LET THE MUSIC FLOW AND ACCOMPANY YOUR EVERY MOMENT</textarea></div>
+  <div class="section"><label class="label">FOOTER</label><input id="footer" value="discord.gg/euphoria"></div>
+  <div class="section"><label class="label">ACCENT COLOR</label><input id="color" type="color" value="#b873ff"></div>
+
+  <button class="primary" id="gifBtn">✦ GENERATE ANIMATED GIF</button>
+  <button class="secondary" id="pngBtn">⇩ DOWNLOAD PNG</button>
+  <div class="small-note">930 × 280 px · 36 frames · 3 seconds · 12 FPS<br>Main title uses outline-only treatment.</div>
+</aside>
+
+<main class="preview">
+  <div class="preview-head"><span>LIVE PREVIEW • 930 × 280</span><span>↗ &nbsp; ⇩</span></div>
+  <div class="canvas-wrap"><canvas id="canvas" width="930" height="280"></canvas></div>
+</main>
+
+<section class="export">
+  <div><div class="export-title">EXPORT ANIMATED GIF</div><div class="bar"><i id="bar"></i></div></div>
+  <div class="status"><strong><span class="dot"></span><span id="statusTitle">Ready to export!</span></strong><span id="statusText">Click the button to generate animated GIF</span></div>
+</section>
+</div>
+
+<script>
+const W=930,H=280,FPS=12,FRAMES=36;
+const c=document.getElementById("canvas"),x=c.getContext("2d");
+const $=id=>document.getElementById(id);
+let bg=null,avatar=null;
+
+function readImage(file){
+  return new Promise((resolve,reject)=>{
+    if(!file)return resolve(null);
+    const r=new FileReader();
+    r.onload=()=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=r.result};
+    r.onerror=reject;r.readAsDataURL(file);
+  });
+}
+$("bg").onchange=async e=>{bg=await readImage(e.target.files[0]);draw(0)};
+$("avatar").onchange=async e=>{avatar=await readImage(e.target.files[0]);draw(0)};
+["small","title","desc","footer","color"].forEach(id=>$(id).addEventListener("input",()=>draw(performance.now()/1000)));
+
+async function fonts(){
+  await Promise.all([
+    document.fonts.load('900 70px DrukWide'),
+    document.fonts.load('400 20px SecularOne'),
+    document.fonts.load('400 20px Stilu')
+  ]);
+}
+function rgba(hex,a){
+  hex=hex.replace("#","");
+  return `rgba(${parseInt(hex.slice(0,2),16)},${parseInt(hex.slice(2,4),16)},${parseInt(hex.slice(4,6),16)},${a})`;
+}
+function cover(im,dx,dy,dw,dh,zoom=1){
+  if(!im)return;
+  const ir=im.width/im.height,tr=dw/dh;
+  let w,h;
+  if(ir>tr){h=dh;w=h*ir}else{w=dw;h=w/ir}
+  w*=zoom;h*=zoom;
+  x.drawImage(im,dx+(dw-w)/2,dy+(dh-h)/2,w,h);
+}
+function rand(n){const q=Math.sin(n*9999.91)*43758.5453;return q-Math.floor(q)}
+function glow(px,py,r,col,a){
+  const g=x.createRadialGradient(px,py,0,px,py,r);
+  g.addColorStop(0,rgba(col,a));g.addColorStop(.4,rgba(col,a*.28));g.addColorStop(1,rgba(col,0));
+  x.fillStyle=g;x.fillRect(px-r,py-r,r*2,r*2);
+}
+function particles(t,col){
+  for(let i=0;i<125;i++){
+    const bx=rand(i*3.17)*W,by=rand(i*7.71)*H;
+    const px=bx+Math.sin(t*.25+i*.8)*5,py=by+Math.cos(t*.2+i)*3;
+    const s=rand(i*2.33)*1.7+.35;
+    const a=(.12+rand(i*5.12)*.72)*(.65+Math.sin(t*2+i*4)*.35);
+    x.beginPath();x.arc(px,py,s,0,Math.PI*2);x.fillStyle=rgba(col,a);x.fill();
+  }
+}
+function avatarCircle(cx,cy,size,col){
+  x.save();
+  x.shadowColor=col;x.shadowBlur=28;
+  x.beginPath();x.arc(cx,cy,size/2+4,0,Math.PI*2);x.strokeStyle=rgba(col,.98);x.lineWidth=4;x.stroke();
+  x.restore();
+
+  x.beginPath();x.arc(cx,cy,size/2,0,Math.PI*2);x.save();x.clip();
+  if(avatar) cover(avatar,cx-size/2,cy-size/2,size,size,1.03);
+  else {const g=x.createRadialGradient(cx-20,cy-25,4,cx,cy,size);g.addColorStop(0,"#e8d2ff");g.addColorStop(.5,"#8246d2");g.addColorStop(1,"#1b0d30");x.fillStyle=g;x.fillRect(cx-size/2,cy-size/2,size,size)}
+  x.restore();
+
+  x.beginPath();x.arc(cx,cy,size/2-2,0,Math.PI*2);x.strokeStyle=rgba(col,.62);x.lineWidth=2;x.stroke();
+}
+function fit(text,max,maxSize,min,font,weight=400){
+  let s=maxSize;while(s>min){x.font=`${weight} ${s}px ${font}`;if(x.measureText(text).width<=max)return s;s--}return min;
+}
+function draw(t=0){
+  const col=$("color").value;
+  x.clearRect(0,0,W,H);
+
+  if(bg){
+    // Correct cover crop: preserve aspect ratio, never stretch.
+    const mx=Math.sin(t*.16)*8,my=Math.cos(t*.13)*4;
+    cover(bg,mx,my,W,H,1.08);
+  }else{
+    const g=x.createLinearGradient(0,0,W,H);
+    g.addColorStop(0,"#10061f");g.addColorStop(.3,"#30105a");g.addColorStop(.65,"#5a249d");g.addColorStop(1,"#120527");
+    x.fillStyle=g;x.fillRect(0,0,W,H);
+  }
+
+  const ov=x.createLinearGradient(0,0,W,0);
+  ov.addColorStop(0,"rgba(3,2,10,.48)");ov.addColorStop(.38,"rgba(5,2,12,.10)");ov.addColorStop(.75,"rgba(7,2,15,.13)");ov.addColorStop(1,"rgba(3,2,10,.42)");
+  x.fillStyle=ov;x.fillRect(0,0,W,H);
+
+  glow(690+Math.sin(t*.34)*105,128+Math.cos(t*.27)*40,270,col,.25);
+  glow(300+Math.cos(t*.21)*65,95,190,"#7138ff",.14);
+  particles(t,col);
+
+  const vign=x.createRadialGradient(W/2,H/2,90,W/2,H/2,560);
+  vign.addColorStop(0,"rgba(0,0,0,0)");vign.addColorStop(.7,"rgba(0,0,0,.08)");vign.addColorStop(1,"rgba(0,0,0,.55)");
+  x.fillStyle=vign;x.fillRect(0,0,W,H);
+
+  // Profile is deliberately larger and vertically centered like the reference.
+  avatarCircle(148,140,145,col);
+
+  const left=255,max=650;
+
+  // SMALL TITLE — generous gap before main title.
+  const st=$("small").value||"MUSIC BOT";
+  const ss=fit(st,max,21,12,"SecularOne",400);
+  x.font=`400 ${ss}px SecularOne`;x.textAlign="left";x.textBaseline="alphabetic";
+  x.fillStyle="rgba(255,255,255,.96)";x.fillText(st,left,76);
+
+  // MAIN TITLE — outline ONLY. No fill.
+  const title=$("title").value||"EUPHORIA";
+  const ts=fit(title,max,73,28,"DrukWide",900);
+  x.font=`900 ${ts}px DrukWide`;
+  x.lineJoin="round";x.miterLimit=2;
+  x.lineWidth=3.2;
+  x.strokeStyle=col;
+  x.shadowColor=rgba(col,.45);x.shadowBlur=9;
+  x.strokeText(title,left,151);
+  x.shadowBlur=0;
+
+  // Thin separator sits between title and description.
+  const lg=x.createLinearGradient(left,0,850,0);
+  lg.addColorStop(0,rgba(col,.85));lg.addColorStop(.7,rgba(col,.25));lg.addColorStop(1,rgba(col,0));
+  x.fillStyle=lg;x.fillRect(left,173,580,1.3);
+
+  // DESCRIPTION — smaller and with more breathing room.
+  const desc=$("desc").value||"";
+  const ds=fit(desc,max,18,10,"Stilu",400);
+  x.font=`400 ${ds}px Stilu`;x.fillStyle="rgba(255,255,255,.95)";
+  x.fillText(desc,left,202);
+
+  // FOOTER — intentionally separated from description.
+  const foot=$("footer").value||"discord.gg/euphoria";
+  x.font='400 12px SecularOne';x.fillStyle="rgba(255,255,255,.58)";
+  x.fillText(foot,left,232);
+}
+async function ensureFonts(){await fonts();draw(0)}
+ensureFonts();
+
+$("pngBtn").onclick=async()=>{
+  await fonts();draw(0);
+  const a=document.createElement("a");a.download="euphoria-banner.png";a.href=c.toDataURL("image/png");a.click();
+};
+$("gifBtn").onclick=async()=>{
+  const btn=$("gifBtn");btn.disabled=true;btn.textContent="RENDERING GIF...";
+  $("statusTitle").textContent="Rendering...";
+  $("statusText").textContent="Preparing frames and encoding animation";
+  $("bar").style.width="0%";
+  try{
+    await fonts();
+    const gif=new GIF({
+      workers:2,quality:7,width:W,height:H,
+      workerScript:"https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js"
+    });
+    for(let i=0;i<FRAMES;i++){
+      draw(i/FPS);
+      gif.addFrame(c,{copy:true,delay:1000/FPS});
+      $("bar").style.width=Math.round((i+1)/FRAMES*70)+"%";
+      await new Promise(r=>setTimeout(r,0));
+    }
+    gif.on("progress",p=>{
+      $("bar").style.width=(70+Math.round(p*30))+"%";
+      $("statusText").textContent=`Encoding GIF... ${70+Math.round(p*30)}%`;
+    });
+    gif.on("finished",blob=>{
+      const url=URL.createObjectURL(blob),a=document.createElement("a");
+      a.href=url;a.download="euphoria-banner.gif";a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),2000);
+      $("bar").style.width="100%";$("statusTitle").textContent="Ready!";
+      $("statusText").textContent="euphoria-banner.gif has been generated";
+      btn.disabled=false;btn.textContent="✦ GENERATE ANIMATED GIF";
+    });
+    gif.render();
+  }catch(err){
+    console.error(err);$("statusTitle").textContent="Export failed";$("statusText").textContent=err.message||"Unknown error";
+    btn.disabled=false;btn.textContent="✦ GENERATE ANIMATED GIF";
+  }
+};
+</script>
+</body>
+</html>
