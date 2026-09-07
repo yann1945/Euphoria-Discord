@@ -22,10 +22,19 @@ module.exports = {
     if (message.author.bot || !message.guild) return;
     await client.emojiReady?.catch(() => {});
 
-    const isIgnored = await IgnoreChannelModel.findOne({
-      guildId: message.guild.id,
-      channelId: message.channel.id
-    });
+    if (!client.dbReady) {
+      return;
+    }
+
+    let isIgnored = false;
+    try {
+      isIgnored = await IgnoreChannelModel.findOne({
+        guildId: message.guild.id,
+        channelId: message.channel.id
+      }).maxTimeMS(5000);
+    } catch (error) {
+      client.logger?.log?.(`[DB] ignorechannel lookup failed: ${error.message}`, "warn");
+    }
     if (isIgnored) {
       return;
     }
@@ -40,7 +49,12 @@ module.exports = {
         return;
       }
 
-      const userPrefixData = await PrefixSchema.findOne({ Guild: message.author.id, isUser: true });
+      let userPrefixData = null;
+      try {
+        userPrefixData = await PrefixSchema.findOne({ Guild: message.author.id, isUser: true }).maxTimeMS(5000);
+      } catch (error) {
+        client.logger?.log?.(`[DB] prefix lookup failed: ${error.message}`, "warn");
+      }
       const userPrefix = userPrefixData?.Prefix;
       const displayPrefix = userPrefix || prefix;
 
@@ -61,24 +75,39 @@ module.exports = {
       return;
     }
 
-    const hasNoPrefix = await NoPrefixSchema.findOne({
-      userId: message.author.id,
-      guildId: "GLOBAL",
-      noprefix: true,
-      $or: [
-        { expiresAt: null },
-        { expiresAt: { $gt: Date.now() } }
-      ]
-    });
+    let hasNoPrefix = false;
+    try {
+      hasNoPrefix = await NoPrefixSchema.findOne({
+        userId: message.author.id,
+        guildId: "GLOBAL",
+        noprefix: true,
+        $or: [
+          { expiresAt: null },
+          { expiresAt: { $gt: Date.now() } }
+        ]
+      }).maxTimeMS(5000);
+    } catch (error) {
+      client.logger?.log?.(`[DB] noprefix lookup failed: ${error.message}`, "warn");
+    }
 
     let usedPrefix = '';
     
     // Check for custom user prefix first
-    const userPrefixData = await PrefixSchema.findOne({ Guild: message.author.id, isUser: true });
+    let userPrefixData = null;
+    try {
+      userPrefixData = await PrefixSchema.findOne({ Guild: message.author.id, isUser: true }).maxTimeMS(5000);
+    } catch (error) {
+      client.logger?.log?.(`[DB] user prefix lookup failed: ${error.message}`, "warn");
+    }
     const userPrefix = userPrefixData?.Prefix;
     
     // Check for custom aliases
-    const userAliases = await AliasSchema.find({ userId: message.author.id });
+    let userAliases = [];
+    try {
+      userAliases = await AliasSchema.find({ userId: message.author.id }).maxTimeMS(5000);
+    } catch (error) {
+      client.logger?.log?.(`[DB] alias lookup failed: ${error.message}`, "warn");
+    }
     
     // Try to match with user prefix first
     if (userPrefix && message.content.startsWith(userPrefix)) {
@@ -105,7 +134,12 @@ module.exports = {
     if (!commandName) return;
 
     // Check for custom command
-    const customCmd = await CustomCommandSchema.findOne({ userId: message.author.id, name: commandName });
+    let customCmd = null;
+    try {
+      customCmd = await CustomCommandSchema.findOne({ userId: message.author.id, name: commandName }).maxTimeMS(5000);
+    } catch (error) {
+      client.logger?.log?.(`[DB] custom command lookup failed: ${error.message}`, "warn");
+    }
     if (customCmd) {
       const customDisplay = new TextDisplayBuilder()
         .setContent(customCmd.response);
@@ -125,7 +159,12 @@ module.exports = {
 
     if (!command) return;
 
-    const isBlacklisted = await BlacklistSchema.findOne({ userId: message.author.id });
+    let isBlacklisted = false;
+    try {
+      isBlacklisted = await BlacklistSchema.findOne({ userId: message.author.id }).maxTimeMS(5000);
+    } catch (error) {
+      client.logger?.log?.(`[DB] blacklist lookup failed: ${error.message}`, "warn");
+    }
     if (isBlacklisted) {
       const blacklistDisplay = new TextDisplayBuilder()
         .setContent(`**${client.emoji.warn} You have been blacklisted from using the bot!**`);

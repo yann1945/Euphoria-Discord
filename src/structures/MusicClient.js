@@ -58,6 +58,7 @@ class MusicBot extends Client {
     this.spamMap = new Map();
     this.cooldowns = new Collection();
     this.voiceHealthMonitor = new VoiceHealthMonitor(this);
+    this.dbReady = false;
 
     if (process.env.DEBUG_VOICE === "true") {
       this.on("raw", (packet) => {
@@ -84,15 +85,16 @@ class MusicBot extends Client {
   async _connectMongodb() {
     const dbOptions = {
       autoIndex: false,
-      connectTimeoutMS: 60000,
-      socketTimeoutMS: 60000,
-      serverSelectionTimeoutMS: 60000,
+      connectTimeoutMS: 120000,
+      socketTimeoutMS: 120000,
+      serverSelectionTimeoutMS: 120000,
       family: 4,
     };
 
     mongoose.set("strictQuery", false);
     await mongoose.connect(this.config.mongourl, dbOptions);
     mongoose.Promise = global.Promise;
+    this.dbReady = true;
 
     mongoose.connection.on("connected", () => {
       this.logger.log("[DB] Database connected", "ready");
